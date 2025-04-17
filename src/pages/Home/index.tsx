@@ -1,12 +1,11 @@
 import { Coffee, Package, ShoppingCart, Timer } from '@phosphor-icons/react'
 import { useTheme } from 'styled-components'
+import { useEffect, useState } from 'react'
 
 import { CoffeeCard } from '../../components/CoffeeCard'
-
 import { CoffeeList, Heading, Hero, HeroContent, Info, Navbar } from './styles'
-import { useEffect, useState } from 'react';
-import { Radio } from '../../components/Form/Radio';
-import { api } from '../../serves/api';
+import { Radio } from '../../components/Form/Radio'
+import { api } from '../../serves/api'
 
 interface Coffee {
   id: string;
@@ -22,19 +21,37 @@ interface Coffee {
 export function Home() {
   const theme = useTheme();
   const [coffees, setCoffees] = useState<Coffee[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>('')
 
   useEffect(() => {
     async function fetchCoffees() {
-      const response = await api('/coffees');
-      setCoffees(response.data);
-
-      console.log({coffees: response.data});
+      try {
+        const response = await api.get('/coffees')
+        const sortedCoffees = response.data.sort((a: Coffee, b: Coffee) =>
+          a.title.localeCompare(b.title)
+        )
+        setCoffees(sortedCoffees)
+      } catch (error) {
+        console.error('Erro ao carregar cafés', error)
+      }
     }
-    fetchCoffees();
-  }, []);
+    fetchCoffees()
+  }, [])
 
+  const filteredCoffees = selectedCategory
+    ? coffees.filter(coffee =>
+        coffee.tags.some(tag =>
+          tag.toLowerCase() === selectedCategory.toLowerCase()
+        )
+      )
+    : coffees
 
-  
+  function toggleCategory(category: string) {
+    setSelectedCategory(prev =>
+      prev === category ? '' : category
+    )
+  }
+
   function incrementQuantity(id: string) {
     setCoffees((prevState) =>
       prevState.map((coffee) => {
@@ -147,23 +164,23 @@ export function Home() {
         <h2>Nossos cafés</h2>
         <Navbar>
           <Radio
-            onClick={() => {}}
-            isSelected={false}
-            value="tradicional"
+            onClick={() => toggleCategory('Tradicional')}
+            isSelected={selectedCategory === 'Tradicional'}
+            value="Tradicional"
           >
             <span>Tradicional</span>
           </Radio>
           <Radio
-            onClick={() => {}}
-            isSelected={false}
-            value="gelado"
+            onClick={() => toggleCategory('Especial')}
+            isSelected={selectedCategory === 'Especial'}
+            value="Especial"
           >
-            <span>Gelado</span>
+            <span>Especial</span>
           </Radio>
           <Radio
-            onClick={() => {}}
-            isSelected={false}
-            value="com leite"
+            onClick={() => toggleCategory('Com leite')}
+            isSelected={selectedCategory === 'Com leite'}
+            value="Com leite"
           >
             <span>Com leite</span>
           </Radio>
@@ -171,7 +188,7 @@ export function Home() {
 
 
         <div>
-          {coffees.map((coffee) => (
+          {filteredCoffees.map(coffee => (
             <CoffeeCard
               key={coffee.id}
               coffee={coffee}
